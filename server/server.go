@@ -6,7 +6,7 @@ import (
 
 	"github.com/Masterminds/cookoo"
 	"github.com/Masterminds/cookoo/web"
-	"github.com/deis/k8splace/model"
+	"github.com/technosophos/k8splace/model"
 )
 
 func main() {
@@ -51,14 +51,35 @@ func routes(reg *cookoo.Registry) {
 	reg.AddRoute(cookoo.Route{
 		Name: "GET /package/*",
 		Help: "Get an individual package",
+		Does: []cookoo.Task{
+			cookoo.Cmd{
+				Name: "res",
+				Fn:   GetPackage,
+			},
+			cookoo.Include{"@out"},
+		},
 	})
 	reg.AddRoute(cookoo.Route{
 		Name: "POST /package",
 		Help: "Create a package",
+		Does: []cookoo.Task{
+			cookoo.Cmd{
+				Name: "res",
+				Fn:   AddPackage,
+			},
+			cookoo.Include{"@out"},
+		},
 	})
 	reg.AddRoute(cookoo.Route{
 		Name: "POST /package/*",
 		Help: "Create a package release",
+		Does: []cookoo.Task{
+			cookoo.Cmd{
+				Name: "res",
+				Fn:   AddRelease,
+			},
+			cookoo.Include{"@out"},
+		},
 	})
 }
 
