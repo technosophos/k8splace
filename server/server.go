@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/Masterminds/cookoo"
+	"github.com/Masterminds/cookoo/log"
 	"github.com/Masterminds/cookoo/web"
 	"github.com/technosophos/k8splace/model"
 )
@@ -55,6 +57,9 @@ func routes(reg *cookoo.Registry) {
 			cookoo.Cmd{
 				Name: "res",
 				Fn:   GetPackage,
+				Using: []cookoo.Param{
+					{Name: "id", From: "path:1"},
+				},
 			},
 			cookoo.Include{"@out"},
 		},
@@ -93,9 +98,9 @@ func Packages(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt
 		Offset: 0,
 		Total:  3,
 		Results: []*model.Package{
-			dummyPackage(1, "deis/postgres"),
-			dummyPackage(2, "deis/riak"),
-			dummyPackage(3, "technosophos/blog"),
+			dummyPackage(1, "deis:postgres"),
+			dummyPackage(2, "deis:riak"),
+			dummyPackage(3, "technosophos:blog"),
 		},
 	}, nil
 }
@@ -126,12 +131,14 @@ func dummyPackage(id int, name string) *model.Package {
 		Rating:       5.0,
 		LastUpdated:  time.Now().Add(-5 * time.Minute),
 		Releases: []*model.Release{
-			dummyRelease(100+id, id, "1.2.3"),
-			dummyRelease(200+id, id, "1.2.4"),
 			dummyRelease(300+id, id, "1.3.0"),
+			dummyRelease(200+id, id, "1.2.4"),
+			dummyRelease(100+id, id, "1.2.3"),
 		},
 	}
 }
+
+var PkgNotFound = errors.New("Package not found")
 
 // GetPackage gets a package by ID
 //
@@ -141,7 +148,14 @@ func dummyPackage(id int, name string) *model.Package {
 // Returns:
 //  - *model.Package
 func GetPackage(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
-	return dummyPackage(1, "deis/postgres"), nil
+	pname := p.Get("id", "").(string)
+
+	if pname != "deis:postgres" {
+		log.Warnf(c, "Not found: %q", pname)
+		// FIXME: This should not be a 500
+		return nil, PkgNotFound
+	}
+	return dummyPackage(1, "deis:postgres"), nil
 }
 
 // AddPackage creates a new package
@@ -151,7 +165,7 @@ func GetPackage(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interru
 // Returns:
 //
 func AddPackage(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
-	return dummyPackage(1, "deis/postgres"), nil
+	return dummyPackage(1, "deis:postgres"), nil
 }
 
 // AddRelease adds a release to a package
@@ -161,7 +175,7 @@ func AddPackage(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interru
 // Returns:
 //
 func AddRelease(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
-	return dummyPackage(1, "deis/postgres"), nil
+	return dummyPackage(1, "deis:postgres"), nil
 }
 
 // toJSON marshals an object into JSON
