@@ -1,6 +1,8 @@
 package backend
 
 import (
+	"time"
+
 	"github.com/Masterminds/cookoo"
 	"github.com/technosophos/k8splace/model"
 	"gopkg.in/mgo.v2"
@@ -76,6 +78,10 @@ func Package(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt)
 //  - pkg (*model.Package): The package, modified
 func AddPackage(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
 	pkg := p.Get("pkg", nil).(*model.Package)
+
+	now := time.Now()
+	pkg.CreationDate = now
+	pkg.LastUpdated = now
 
 	err := ds(c).C("packages").Insert(pkg)
 	return pkg, err

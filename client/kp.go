@@ -1,13 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
+	"time"
 
 	"github.com/codegangsta/cli"
 	pretty "github.com/deis/pkg/prettyprint"
+	"github.com/technosophos/k8splace/model"
 )
 
 const version = "0.0.1"
@@ -86,15 +90,22 @@ func get(c *cli.Context) {
 		die(err)
 	}
 
+	pdir := path.Join(wd, p.Name)
+
+	if err := os.MkdirAll(pdir, 0755); err != nil {
+		die(err)
+	}
+
 	if len(p.Releases) == 0 {
-		info("There are no releases of %q. Aborting.", pkg)
-		os.Exit(2)
+		info("There are no releases of %q.", pkg)
+		ftw("Installed empty package %s into %q", p.Name, path.Join(wd, pdir))
+		return
 	}
 
 	rel := p.Releases[0]
 	info("Newest Version: %s", rel.Version)
 
-	ftw("Installed %s %s into %q", p.Name, rel.Version, path.Join(wd, pkg))
+	ftw("Installed %s %s into %q", p.Name, rel.Version, pdir)
 }
 
 func install(c *cli.Context) {
@@ -116,8 +127,58 @@ func create(c *cli.Context) {
 }
 
 func push(c *cli.Context) {
+	wd := ensureHome(c)
 	pkg := a1(c, "No package name given")
-	info("Pushing %q to K8sPlace", pkg)
+	ver := a2(c, "Version is required")
+	h := NewClient(c.GlobalString("host"))
+
+	// Grab the latest version of the package from the server
+	p, err := h.Get(pkg)
+	if err != nil {
+		die(err)
+	}
+
+	// Build a release
+	r := &model.Release{
+		Version:   ver,
+		Author:    p.Author,
+		Date:      time.Now(),
+		PackageId: p.ID,
+		Manifests: makeManifests(path.Join(wd, pkg)),
+	}
+
+	// Add it
+	p.Releases = append([]*model.Release{r}, p.Releases...)
+
+	info("Pushing %s %s to K8sPlace", pkg, ver)
+	d, _ := json.Marshal(p)
+	fmt.Println(string(d))
+}
+
+func makeManifests(wd string) map[string]string {
+	m := map[string]string{}
+
+	f, err := os.Open(wd)
+	if err != nil {
+		die(err)
+	}
+
+	files, err := f.Readdirnames(0)
+	if err != nil {
+		die(err)
+	}
+
+	for _, fname := range files {
+		// Read the contents
+		data, err := ioutil.ReadFile(path.Join(wd, fname))
+		if err != nil {
+			info("Skipping file %s because %q", fname, err)
+			continue
+		}
+		m[fname] = string(data)
+	}
+
+	return m
 }
 
 func a1(c *cli.Context, msg string) string {
@@ -126,6 +187,14 @@ func a1(c *cli.Context, msg string) string {
 		die(errors.New(msg))
 	}
 	return a[0]
+}
+
+func a2(c *cli.Context, msg string) string {
+	a := c.Args()
+	if len(a) < 2 {
+		die(errors.New(msg))
+	}
+	return a[1]
 }
 
 func info(msg string, args ...interface{}) {
