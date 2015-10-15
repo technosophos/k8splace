@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/cookoo"
+	"github.com/Masterminds/cookoo/log"
 	"github.com/technosophos/k8splace/model"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -96,11 +97,12 @@ func AddPackage(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interru
 //	- pkg
 func AddRelease(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
 	pkg := p.Get("pkg", nil).(*model.Package)
-	rel := p.Get("rel", nil).(*model.Release)
+	//rel := p.Get("rel", nil).(*model.Release)
 
-	rels := append([]*model.Release{rel}, pkg.Releases...)
-	pkg.Releases = rels
+	//rels := append([]*model.Release{rel}, pkg.Releases...)
+	//pkg.Releases = rels
 
+	log.Infof(c, "Updating %s", pkg.Name)
 	err := ds(c).C("packages").Update(bson.M{"name": pkg.Name}, pkg)
 
 	return pkg, err

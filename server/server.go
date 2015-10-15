@@ -120,18 +120,18 @@ func routes(reg *cookoo.Registry) {
 		Name: "POST /package/*",
 		Help: "Create a package release",
 		Does: []cookoo.Task{
-			cookoo.Cmd{
-				Name: "pkg",
-				Fn:   backend.Package,
-				Using: []cookoo.Param{
-					{Name: "pkg", From: "path:1"},
-				},
-			},
+			//cookoo.Cmd{
+			//Name: "pkg",
+			//Fn:   backend.Package,
+			//Using: []cookoo.Param{
+			//{Name: "name", From: "path:1"},
+			//},
+			//},
 			cookoo.Cmd{
 				Name: "-",
 				Fn:   cookoo.AddToContext,
 				Using: []cookoo.Param{
-					{Name: "prototype", DefaultValue: &model.Release{}},
+					{Name: "prototype", DefaultValue: &model.Package{}},
 				},
 			},
 			cookoo.Include{"@json"},
@@ -139,8 +139,7 @@ func routes(reg *cookoo.Registry) {
 				Name: "res",
 				Fn:   backend.AddRelease,
 				Using: []cookoo.Param{
-					{Name: "pkg", From: "cxt:pkg"},
-					{Name: "rel", From: "cxt:json"},
+					{Name: "pkg", From: "cxt:json"},
 				},
 			},
 			cookoo.Include{"@out"},

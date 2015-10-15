@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -53,7 +54,24 @@ func (c *Client) List() (*model.Results, error) {
 	}
 	res := &model.Results{}
 	return res, json.Unmarshal(b, res)
+}
 
+func (c *Client) Update(pkg *model.Package) error {
+	u := c.addr + "/package/" + pkg.Name
+	data, err := json.Marshal(pkg)
+	if err != nil {
+		return err
+	}
+
+	r, err := http.Post(u, "application/json", bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	if r.StatusCode < 200 || r.StatusCode > 299 {
+		return fmt.Errorf("Server responded %s", r.Status)
+	}
+
+	return nil
 }
 
 func (c *Client) CreatePackage(fname string) (*model.Package, error) {

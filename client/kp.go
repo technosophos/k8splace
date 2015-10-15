@@ -1,12 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/codegangsta/cli"
@@ -111,9 +112,26 @@ func get(c *cli.Context) {
 func install(c *cli.Context) {
 	wd := ensureHome(c)
 	pkg := a1(c, "No package name given")
-	info("Getting %s", pkg)
-	ftw("Installed %q into %q", pkg, path.Join(wd, pkg))
+	fname := path.Join(wd, pkg)
+	if _, err := os.Stat(fname); err != nil {
+		get(c)
+	}
+
 	info("Uploading %s to Kubernetes", pkg)
+	paths, _ := filepath.Glob(filepath.Join(fname, "*.yaml"))
+	for _, ff := range paths {
+		cmd := exec.Command("kubectl", "create", "-f", ff)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			info("%s: %s", out, err)
+		}
+	}
+	paths, _ = filepath.Glob(filepath.Join(fname, "*.json"))
+	for _, ff := range paths {
+		cmd := exec.Command("kubectl", "create", "-f", ff)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			info("%s: %s", out, err)
+		}
+	}
 }
 
 func create(c *cli.Context) {
@@ -151,12 +169,17 @@ func push(c *cli.Context) {
 	p.Releases = append([]*model.Release{r}, p.Releases...)
 
 	info("Pushing %s %s to K8sPlace", pkg, ver)
-	d, _ := json.Marshal(p)
-	fmt.Println(string(d))
+	//d, _ := json.Marshal(p)
+	//fmt.Println(string(d))
+	if err := h.Update(p); err != nil {
+		die(err)
+	}
+	ftw("Updated %s", p.Name)
 }
 
-func makeManifests(wd string) map[string]string {
-	m := map[string]string{}
+func makeManifests(wd string) []*model.Manifest {
+	//m := map[string]string{}
+	m := []*model.Manifest{}
 
 	f, err := os.Open(wd)
 	if err != nil {
@@ -175,7 +198,12 @@ func makeManifests(wd string) map[string]string {
 			info("Skipping file %s because %q", fname, err)
 			continue
 		}
-		m[fname] = string(data)
+		//m[fname] = string(data)
+		mm := &model.Manifest{
+			Name: fname,
+			Data: string(data),
+		}
+		m = append(m, mm)
 	}
 
 	return m

@@ -19,14 +19,19 @@ type Package struct {
 }
 
 type Release struct {
-	ID          int               `json:"id"`
-	Version     string            `json:"version"`
-	Description string            `json:"description"`
-	Author      string            `json:"author"`
-	Date        time.Time         `json:"date"`
-	Rating      float64           `json:"rating"`
-	Manifests   map[string]string `json:"manifests"`
-	PackageId   int               `json:"packageId"`
+	ID          int         `json:"id"`
+	Version     string      `json:"version"`
+	Description string      `json:"description"`
+	Author      string      `json:"author"`
+	Date        time.Time   `json:"date"`
+	Rating      float64     `json:"rating"`
+	Manifests   []*Manifest `json:"manifests"`
+	PackageId   int         `json:"packageId"`
+}
+
+type Manifest struct {
+	Name string `json:"name"`
+	Data string `json:"data"`
 }
 
 type Results struct {
