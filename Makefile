@@ -3,6 +3,10 @@ build:
 	go build -o k8splace server/server.go
 	go build -o kp client/*.go
 
+install: build
+	install -d ${DESTDIR}/usr/local/bin/
+	install -m 755 ./kp ${DESTDIR}/usr/local/bin/kp
+
 #To have launchd start mongodb at login:
   #ln -sfv /usr/local/opt/mongodb/*.plist ~/Library/LaunchAgents
 #Then to load mongodb now:

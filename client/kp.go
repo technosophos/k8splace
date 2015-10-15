@@ -76,7 +76,7 @@ func list(c *cli.Context) {
 		die(err)
 	}
 	for _, i := range items.Results {
-		fmt.Printf("\t%s\n", i.Name)
+		fmt.Printf("\t%s - %s\n", i.Name, i.Description)
 	}
 }
 

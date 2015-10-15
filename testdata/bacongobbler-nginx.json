@@ -1,7 +1,7 @@
 {
     "id": 1235,
-    "name": "deis:postgres",
-    "description": "PostgreSQL for Kubernetes",
+    "name": "bacongobbler:nginx",
+    "description": "NGINX in Kubernetes",
     "readme": "# Deis:MC\n\t\tQuery S3-like object storage.\n\t\t",
     "author": "Jack, Rimus, and Matt"
 }

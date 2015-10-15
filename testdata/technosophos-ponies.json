@@ -1,7 +1,7 @@
 {
     "id": 1235,
-    "name": "deis:postgres",
-    "description": "PostgreSQL for Kubernetes",
+    "name": "technosophos:ponies",
+    "description": "Pretty, pretty ponies",
     "readme": "# Deis:MC\n\t\tQuery S3-like object storage.\n\t\t",
     "author": "Jack, Rimus, and Matt"
 }
