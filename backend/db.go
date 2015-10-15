@@ -41,6 +41,18 @@ func ds(c cookoo.Context) *Datasource {
 	return c.Datasource(DSName).(*Datasource)
 }
 
+// Packages returns a list of all packages.
+//
+// Params:
+//
+// Returns:
+// *model.Results
+func Packages(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
+	res := &model.Results{}
+	err := ds(c).C("packages").Find(bson.M{}).All(&res.Results)
+	return res, err
+}
+
 // Package gets a package.
 //
 // Params:
@@ -66,5 +78,24 @@ func AddPackage(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interru
 	pkg := p.Get("pkg", nil).(*model.Package)
 
 	err := ds(c).C("packages").Insert(pkg)
+	return pkg, err
+}
+
+// AddRelease adds a release to a package.
+//
+// Params:
+//	- rel (*model.Release)
+// 	- pkg (*model.Package)
+// Returns:
+//	- pkg
+func AddRelease(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
+	pkg := p.Get("pkg", nil).(*model.Package)
+	rel := p.Get("rel", nil).(*model.Release)
+
+	rels := append([]*model.Release{rel}, pkg.Releases...)
+	pkg.Releases = rels
+
+	err := ds(c).C("packages").Update(bson.M{"name": pkg.Name}, pkg)
+
 	return pkg, err
 }

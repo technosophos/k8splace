@@ -2,10 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
-	"time"
+	"reflect"
 
 	"github.com/Masterminds/cookoo"
 	"github.com/Masterminds/cookoo/log"
@@ -44,7 +43,7 @@ func routes(reg *cookoo.Registry) {
 				Fn:   fromJSON,
 				Using: []cookoo.Param{
 					{Name: "data", From: "cxt:data"},
-					{Name: "dest", From: "cxt:dest"},
+					{Name: "dest", From: "cxt:prototype"},
 				},
 			},
 		},
@@ -76,7 +75,7 @@ func routes(reg *cookoo.Registry) {
 		Does: []cookoo.Task{
 			cookoo.Cmd{
 				Name: "res",
-				Fn:   Packages,
+				Fn:   backend.Packages,
 			},
 			cookoo.Include{"@out"},
 		},
@@ -100,8 +99,19 @@ func routes(reg *cookoo.Registry) {
 		Help: "Create a package",
 		Does: []cookoo.Task{
 			cookoo.Cmd{
+				Name: "-",
+				Fn:   cookoo.AddToContext,
+				Using: []cookoo.Param{
+					{Name: "prototype", DefaultValue: &model.Package{}},
+				},
+			},
+			cookoo.Include{"@json"},
+			cookoo.Cmd{
 				Name: "res",
 				Fn:   backend.AddPackage,
+				Using: []cookoo.Param{
+					{Name: "pkg", From: "cxt:json"},
+				},
 			},
 			cookoo.Include{"@out"},
 		},
@@ -111,102 +121,31 @@ func routes(reg *cookoo.Registry) {
 		Help: "Create a package release",
 		Does: []cookoo.Task{
 			cookoo.Cmd{
+				Name: "pkg",
+				Fn:   backend.Package,
+				Using: []cookoo.Param{
+					{Name: "pkg", From: "path:1"},
+				},
+			},
+			cookoo.Cmd{
+				Name: "-",
+				Fn:   cookoo.AddToContext,
+				Using: []cookoo.Param{
+					{Name: "prototype", DefaultValue: &model.Release{}},
+				},
+			},
+			cookoo.Include{"@json"},
+			cookoo.Cmd{
 				Name: "res",
-				Fn:   AddRelease,
+				Fn:   backend.AddRelease,
+				Using: []cookoo.Param{
+					{Name: "pkg", From: "cxt:pkg"},
+					{Name: "rel", From: "cxt:json"},
+				},
 			},
 			cookoo.Include{"@out"},
 		},
 	})
-}
-
-// Packages lists the packages
-//
-// Returns:
-//	- *model.Packages
-func Packages(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
-	return &model.Results{
-		Count:  3,
-		Offset: 0,
-		Total:  3,
-		Results: []*model.Package{
-			dummyPackage(1, "deis:postgres"),
-			dummyPackage(2, "deis:riak"),
-			dummyPackage(3, "technosophos:blog"),
-		},
-	}, nil
-}
-
-func dummyRelease(id, parent int, ver string) *model.Release {
-	return &model.Release{
-		ID:          id,
-		Version:     ver,
-		Description: "Fix all the things!",
-		Author:      "technosophos@github.com",
-		Date:        time.Now(),
-		Rating:      4.7,
-		Manifests:   []interface{}{},
-		PackageId:   parent,
-	}
-}
-
-func dummyPackage(id int, name string) *model.Package {
-	return &model.Package{
-		ID:          id,
-		Name:        name,
-		Description: "Postgres using Governor and Etcd for HA",
-		Readme: `# Postgres
-		Run postgres in Kubernetes.
-		`,
-		Author:       "Jack, Rimus, and Matt",
-		CreationDate: time.Now().Add(-144 * time.Hour),
-		Rating:       5.0,
-		LastUpdated:  time.Now().Add(-5 * time.Minute),
-		Releases: []*model.Release{
-			dummyRelease(300+id, id, "1.3.0"),
-			dummyRelease(200+id, id, "1.2.4"),
-			dummyRelease(100+id, id, "1.2.3"),
-		},
-	}
-}
-
-var PkgNotFound = errors.New("Package not found")
-
-// GetPackage gets a package by ID
-//
-// Params:
-//	- id (string)
-//
-// Returns:
-//  - *model.Package
-func GetPackage(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
-	pname := p.Get("id", "").(string)
-
-	if pname != "deis:postgres" {
-		log.Warnf(c, "Not found: %q", pname)
-		// FIXME: This should not be a 500
-		return nil, PkgNotFound
-	}
-	return dummyPackage(1, "deis:postgres"), nil
-}
-
-// AddPackage creates a new package
-//
-// Params:
-//
-// Returns:
-//
-func AddPackage(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
-	return dummyPackage(1, "deis:postgres"), nil
-}
-
-// AddRelease adds a release to a package
-//
-// Params:
-//
-// Returns:
-//
-func AddRelease(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
-	return dummyPackage(1, "deis:postgres"), nil
 }
 
 // toJSON marshals an object into JSON
@@ -230,7 +169,11 @@ func fromJSON(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt
 	dest := p.Get("dest", nil)
 	data := p.Get("data", []byte{}).([]byte)
 
-	return &dest, json.Unmarshal(data, &dest)
+	// Sort of a dumb way to clone the value of a pointer.
+	tt := reflect.Indirect(reflect.ValueOf(dest)).Type()
+	out := reflect.New(tt).Interface()
+
+	return out, json.Unmarshal(data, out)
 }
 
 // readBody reads the body of an http request

@@ -1,0 +1,44 @@
+{
+    "id": 1234,
+    "name": "deis:postgres",
+    "description": "Postgres using Governor and Etcd for HA",
+    "readme": "# Postgres\n\t\tRun postgres in Kubernetes.\n\t\t",
+    "author": "Jack, Rimus, and Matt",
+    "creationDate": "2015-10-08T14:00:36.492882124-06:00",
+    "lastUpdated": "2015-10-14T13:55:36.492882252-06:00",
+    "rating": 5,
+    "certified": true,
+    "downloads": 15,
+    "releases": [
+        {
+            "id": 101,
+            "version": "1.2.3",
+            "description": "Fix all the things!",
+            "author": "technosophos@github.com",
+            "date": "2015-10-14T14:00:36.492882363-06:00",
+            "rating": 4.7,
+            "manifests": [],
+            "packageId": 1
+        },
+        {
+            "id": 201,
+            "version": "1.2.4",
+            "description": "Fix all the things!",
+            "author": "technosophos@github.com",
+            "date": "2015-10-14T14:00:36.492884866-06:00",
+            "rating": 4.7,
+            "manifests": [],
+            "packageId": 1
+        },
+        {
+            "id": 301,
+            "version": "1.3.0",
+            "description": "Fix all the things!",
+            "author": "technosophos@github.com",
+            "date": "2015-10-14T14:00:36.492884974-06:00",
+            "rating": 4.7,
+            "manifests": [],
+            "packageId": 1
+        }
+    ]
+}

@@ -49,9 +49,30 @@ func main() {
 			Usage:  "push package:name - Push an updated package to k8splace",
 			Action: push,
 		},
+		{
+			Name:   "create",
+			Usage:  "create package:name - Create a new packages",
+			Action: create,
+		},
+		{
+			Name:   "list",
+			Usage:  "List all packages",
+			Action: list,
+		},
 	}
 
 	app.Run(os.Args)
+}
+
+func list(c *cli.Context) {
+	h := NewClient(c.GlobalString("host"))
+	items, err := h.List()
+	if err != nil {
+		die(err)
+	}
+	for _, i := range items.Results {
+		fmt.Printf("\t%s\n", i.Name)
+	}
 }
 
 func get(c *cli.Context) {
@@ -77,12 +98,21 @@ func get(c *cli.Context) {
 }
 
 func install(c *cli.Context) {
-	ensureHome(c)
+	wd := ensureHome(c)
 	pkg := a1(c, "No package name given")
 	info("Getting %s", pkg)
-	cwd, _ := os.Getwd()
-	ftw("Installed %q into %q", pkg, path.Join(cwd, pkg))
+	ftw("Installed %q into %q", pkg, path.Join(wd, pkg))
 	info("Uploading %s to Kubernetes", pkg)
+}
+
+func create(c *cli.Context) {
+	fname := a1(c, "No JSON file given")
+	h := NewClient(c.GlobalString("host"))
+	_, err := h.CreatePackage(fname)
+	if err != nil {
+		die(err)
+	}
+	ftw("Created project")
 }
 
 func push(c *cli.Context) {
