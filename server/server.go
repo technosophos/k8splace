@@ -3,21 +3,52 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"net/http"
 	"time"
 
 	"github.com/Masterminds/cookoo"
 	"github.com/Masterminds/cookoo/log"
 	"github.com/Masterminds/cookoo/web"
+	"github.com/technosophos/k8splace/backend"
 	"github.com/technosophos/k8splace/model"
 )
 
 func main() {
 	reg, route, c := cookoo.Cookoo()
+
+	ds, err := backend.NewDS("localhost", "k8e")
+	if err != nil {
+		log.Critf(c, "Shutting down: %s", err)
+		return
+	}
+	defer ds.Close()
+
+	c.AddDatasource("db", ds)
+
 	routes(reg)
 	web.Serve(reg, route, c)
 }
 
 func routes(reg *cookoo.Registry) {
+	reg.AddRoute(cookoo.Route{
+		Name: "@json",
+		Help: "Parse incoming JSON out of HTTP body",
+		Does: []cookoo.Task{
+			cookoo.Cmd{
+				Name: "data",
+				Fn:   readBody,
+			},
+			cookoo.Cmd{
+				Name: "json",
+				Fn:   fromJSON,
+				Using: []cookoo.Param{
+					{Name: "data", From: "cxt:data"},
+					{Name: "dest", From: "cxt:dest"},
+				},
+			},
+		},
+	})
 	reg.AddRoute(cookoo.Route{
 		Name: "@out",
 		Help: "Serialize JSON and write it to http.Response",
@@ -56,9 +87,9 @@ func routes(reg *cookoo.Registry) {
 		Does: []cookoo.Task{
 			cookoo.Cmd{
 				Name: "res",
-				Fn:   GetPackage,
+				Fn:   backend.Package,
 				Using: []cookoo.Param{
-					{Name: "id", From: "path:1"},
+					{Name: "name", From: "path:1"},
 				},
 			},
 			cookoo.Include{"@out"},
@@ -70,7 +101,7 @@ func routes(reg *cookoo.Registry) {
 		Does: []cookoo.Task{
 			cookoo.Cmd{
 				Name: "res",
-				Fn:   AddPackage,
+				Fn:   backend.AddPackage,
 			},
 			cookoo.Include{"@out"},
 		},
@@ -186,4 +217,29 @@ func AddRelease(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interru
 //  []byte
 func toJSON(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
 	return json.Marshal(p.Get("o", ""))
+}
+
+// fromJSON parses JSON into the named interface.
+//
+// Params:
+// 	- data []byte: the raw data
+//	- dest interface{}: The destination object
+// Returns:
+//
+func fromJSON(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
+	dest := p.Get("dest", nil)
+	data := p.Get("data", []byte{}).([]byte)
+
+	return &dest, json.Unmarshal(data, &dest)
+}
+
+// readBody reads the body of an http request
+//
+// Params:
+//
+// Returns:
+// 	[]byte
+func readBody(c cookoo.Context, p *cookoo.Params) (interface{}, cookoo.Interrupt) {
+	r := c.Get("http.Request", nil).(*http.Request)
+	return ioutil.ReadAll(r.Body)
 }

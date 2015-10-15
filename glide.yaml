@@ -2,3 +2,4 @@ package: github.com/technosophos/k8splace
 import:
   - package: github.com/codegangsta/cli
   - package: github.com/Masterminds/cookoo
+  - package: gopkg.in/mgo.v2
