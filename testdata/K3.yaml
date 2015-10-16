@@ -1,0 +1,12 @@
+name: ponycorn
+home: https://github.com/technosophos/ponycorn
+description: The ponycorn server
+version: 1.0.3
+maintainers:
+  - Matt Butcher <mbutcher@deis.com>
+dependencies:
+  - name: nginx
+    version: 1.9 < x <= 1.10
+details:
+  This package provides the ponycorn server, which requires an existing nginx
+  server to function correctly.

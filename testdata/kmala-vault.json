@@ -1,0 +1,7 @@
+{
+    "id": 1235,
+    "name": "kmala:vault",
+    "description": "Vault secrets storage in Kubernetes",
+    "readme": "# Deis:MC\n\t\tQuery S3-like object storage.\n\t\t",
+    "author": "Jack, Rimus, and Matt"
+}
