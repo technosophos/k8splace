@@ -175,6 +175,37 @@ The command line will support (at least) the following commands:
 
 TODO: We would like to add a `test` command. How would this work?
 
+The client will locally track the following three things:
+
+- The client's own configuration
+- The packages available from the remote service (a local cache)
+- The packages that the client has "downloaded"
+
+The tree looks something like this:
+
+```
+- $KPM_HOME
+      |
+      |- cache/       # Where `kpm update` data goes
+      |
+      |- workdir/     # Working directory, where `kpm get` copies go
+      |
+      |- config.yaml  # configuration info
+```
+
+The default location for `$KPM_HOME` will be `$HOME/.kpm`. This reflects the fact that package management by this method is scoped to the developer, not to the system. However, we will make this flexible because we have the following target use cases in mind:
+
+- Individual KPM developer/user
+- CI/CD system
+- Workdir shared by `git` repo among several developers
+- Dockerized KPM that runs in a container
+
+### Client Config
+
+Clients will track minimal configuration about remote hosts, local state, and possibly security.
+
+The choice of services will determine what directives are needed in this file (if any).
+
 ## A Web Interface
 
 The initial web interface will focus exclusively on education:
